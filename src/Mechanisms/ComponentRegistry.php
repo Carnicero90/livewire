@@ -10,6 +10,22 @@ class ComponentRegistry extends Mechanism
     protected $missingComponentResolvers = [];
     protected $nonAliasedClasses = [];
     protected $aliases = [];
+    protected string $kebabNamespace;
+
+
+    public function __construct() {
+        $namespace = str_replace(
+            ['/', '\\'],
+            '.',
+            trim(trim(config('livewire.class_namespace')), '\\')
+        );
+
+        $namespace = collect(explode('.', $namespace))
+        ->map(fn ($i) => \Illuminate\Support\Str::kebab($i))
+        ->implode('.');
+
+        $this->kebabNamespace = $namespace;
+    }
 
     function component($name, $class = null)
     {
@@ -179,21 +195,11 @@ class ComponentRegistry extends Mechanism
 
     protected function generateNameFromClass($class)
     {
-        $namespace = str_replace(
-            ['/', '\\'],
-            '.',
-            trim(trim(config('livewire.class_namespace')), '\\')
-        );
-
         $class = str_replace(
             ['/', '\\'],
             '.',
             trim(trim($class, '/'), '\\')
         );
-
-        $namespace = collect(explode('.', $namespace))
-            ->map(fn ($i) => \Illuminate\Support\Str::kebab($i))
-            ->implode('.');
 
         $fullName = str(collect(explode('.', $class))
             ->map(fn ($i) => \Illuminate\Support\Str::kebab($i))
@@ -208,8 +214,8 @@ class ComponentRegistry extends Mechanism
             $fullName = $fullName->replaceLast('.index', '');
         }
 
-        if ($fullName->startsWith($namespace)) {
-            return (string) $fullName->substr(strlen($namespace) + 1);
+        if ($fullName->startsWith($this->kebabNamespace)) {
+            return (string) $fullName->substr(strlen($this->kebabNamespace) + 1);
         }
 
         return (string) $fullName;
